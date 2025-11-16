@@ -42,7 +42,7 @@ export default function SignUpPage() {
                 </div>
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">
-                Join Prime Chat
+                Join Swift Chat
               </h1>
               <p className="text-gray-300">
                 Create your account and start chatting

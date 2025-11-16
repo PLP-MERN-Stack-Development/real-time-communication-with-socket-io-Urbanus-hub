@@ -1,11 +1,11 @@
-import { useAuth, useUser } from '@clerk/clerk-react';
-import { useEffect, useState, useRef } from 'react';
-import io from 'socket.io-client';
-import ConversationList from './ConversationList';
-import ChatWindow from './ChatWindow';
-import UserListModal from './UserListModal';
+import { useAuth, useUser } from "@clerk/clerk-react";
+import { useEffect, useState, useRef } from "react";
+import io from "socket.io-client";
+import ConversationList from "./ConversationList";
+import ChatWindow from "./ChatWindow";
+import UserListModal from "./UserListModal";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 function ChatApp() {
   const { getToken } = useAuth();
@@ -20,22 +20,22 @@ function ChatApp() {
   useEffect(() => {
     const initSocket = async () => {
       const token = await getToken();
-      
+
       const newSocket = io(API_URL, {
-        auth: { token }
+        auth: { token },
       });
 
-      newSocket.on('connect', () => {
-        console.log('✅ Connected to server');
+      newSocket.on("connect", () => {
+        console.log("✅ Connected to server");
       });
 
-      newSocket.on('conversations_list', (convos) => {
+      newSocket.on("conversations_list", (convos) => {
         setConversations(convos);
       });
 
-      newSocket.on('conversation_created', (conversation) => {
-        setConversations(prev => {
-          const exists = prev.find(c => c._id === conversation._id);
+      newSocket.on("conversation_created", (conversation) => {
+        setConversations((prev) => {
+          const exists = prev.find((c) => c._id === conversation._id);
           if (exists) return prev;
           return [conversation, ...prev];
         });
@@ -43,36 +43,38 @@ function ChatApp() {
         setShowUserList(false);
       });
 
-      newSocket.on('receive_message', (message) => {
-        setConversations(prev => {
-          return prev.map(conv => {
-            if (conv._id === message.conversationId) {
-              return { 
-                ...conv, 
-                lastMessage: message, 
-                lastMessageAt: new Date() 
-              };
-            }
-            return conv;
-          }).sort((a, b) => 
-            new Date(b.lastMessageAt) - new Date(a.lastMessageAt)
-          );
+      newSocket.on("receive_message", (message) => {
+        setConversations((prev) => {
+          return prev
+            .map((conv) => {
+              if (conv._id === message.conversationId) {
+                return {
+                  ...conv,
+                  lastMessage: message,
+                  lastMessageAt: new Date(),
+                };
+              }
+              return conv;
+            })
+            .sort(
+              (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt)
+            );
         });
       });
 
-      newSocket.on('user_status', ({ userId, isOnline }) => {
-        setConversations(prev => 
-          prev.map(conv => ({
+      newSocket.on("user_status", ({ userId, isOnline }) => {
+        setConversations((prev) =>
+          prev.map((conv) => ({
             ...conv,
-            participants: conv.participants.map(p => 
+            participants: conv.participants.map((p) =>
               p._id === userId ? { ...p, isOnline } : p
-            )
+            ),
           }))
         );
       });
 
-      newSocket.on('error', (error) => {
-        console.error('Socket error:', error);
+      newSocket.on("error", (error) => {
+        console.error("Socket error:", error);
       });
 
       setSocket(newSocket);
@@ -89,31 +91,51 @@ function ChatApp() {
 
   const handleCreateConversation = (participantIds, isGroup, groupName) => {
     if (socket) {
-      socket.emit('create_conversation', {
+      socket.emit("create_conversation", {
         participantIds,
         isGroup,
-        groupName
+        groupName,
       });
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <ConversationList
-        conversations={conversations}
-        selectedConversation={selectedConversation}
-        onSelectConversation={setSelectedConversation}
-        onNewChat={() => setShowUserList(true)}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
-      
-      <ChatWindow
-        socket={socket}
-        conversation={selectedConversation}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } fixed md:relative md:translate-x-0 w-full sm:w-80 transition-transform duration-300 z-40 md:z-auto h-full bg-white md:bg-white shadow-lg md:shadow-none`}
+      >
+        <ConversationList
+          conversations={conversations}
+          selectedConversation={selectedConversation}
+          onSelectConversation={(conv) => {
+            setSelectedConversation(conv);
+            if (window.innerWidth < 768) setSidebarOpen(false);
+          }}
+          onNewChat={() => setShowUserList(true)}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
+      </div>
+
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        <ChatWindow
+          socket={socket}
+          conversation={selectedConversation}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
+      </div>
 
       {showUserList && (
         <UserListModal

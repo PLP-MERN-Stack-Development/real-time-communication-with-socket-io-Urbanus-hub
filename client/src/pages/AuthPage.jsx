@@ -3,9 +3,9 @@ import { MessageCircle, Zap, Users, Lock } from "lucide-react";
 
 export default function AuthPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 flex items-center justify-center p-4 overflow-hidden">
+      <div className="w-full max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center">
           {/* Left Side - Features & Info */}
           <div className="space-y-6 text-white hidden md:block">
             <div>
@@ -75,7 +75,9 @@ export default function AuthPage() {
                 <div className="text-sm text-gray-400">Real-time</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-emerald-400">Secure</div>
+                <div className="text-3xl font-bold text-emerald-400">
+                  Secure
+                </div>
                 <div className="text-sm text-gray-400">Encrypted</div>
               </div>
               <div>

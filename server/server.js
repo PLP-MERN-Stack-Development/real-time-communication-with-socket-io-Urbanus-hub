@@ -3,6 +3,7 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import { clerkMiddleware, clerkClient } from "@clerk/express";
 
 // Our custom files
@@ -51,14 +52,10 @@ app.use(
   })
 );
 
-// 2. Raw Body Parser - MUST come before JSON parser for webhooks
-// This captures the raw body for signature verification
-app.use(express.raw({ type: 'application/json' }));
-
-// 3. JSON Parser - Parse JSON request bodies
+// 2. JSON Parser - Parse JSON request bodies
 app.use(express.json());
 
-// 4. URL-encoded Parser - Parse form data
+// 3. URL-encoded Parser - Parse form data
 app.use(express.urlencoded({ extended: true }));
 
 // 4. CLERK MIDDLEWARE - Process authentication for ALL routes
@@ -303,8 +300,40 @@ io.on("connection", async (socket) => {
  * POST /api/webhooks/clerk
  * Webhook endpoint for Clerk events (user signup, update, delete)
  * This endpoint receives events from Clerk when users sign up or update their profile
+ *
+ * IMPORTANT: This route needs raw body for signature verification
  */
-app.post("/api/webhooks/clerk", handleClerkWebhook);
+app.post(
+  "/api/webhooks/clerk",
+  express.raw({ type: "application/json" }),
+  (req, res, next) => {
+    console.log("🔔 WEBHOOK ENDPOINT HIT!");
+    console.log("   Method:", req.method);
+    console.log("   URL:", req.url);
+    console.log("   Headers:", {
+      "content-type": req.headers["content-type"],
+      "svix-id": req.headers["svix-id"],
+      "svix-signature": req.headers["svix-signature"],
+    });
+    next();
+  },
+  handleClerkWebhook
+);
+
+/**
+ * GET /health
+ * Health check endpoint - useful for testing
+ */
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Server is running",
+    timestamp: new Date(),
+    mongodb:
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    webhook_secret_configured: !!process.env.CLERK_WEBHOOK_SECRET,
+  });
+});
 
 /**
  * GET /api/users

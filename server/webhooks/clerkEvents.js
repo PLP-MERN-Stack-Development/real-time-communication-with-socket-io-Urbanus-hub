@@ -31,7 +31,12 @@ export const handleClerkWebhook = async (req, res) => {
 
     // Get the raw body as a string (important for signature verification)
     // req.body is a Buffer when using express.raw(), so we need to convert it to string
-    const payload = typeof req.body === 'string' ? req.body : Buffer.isBuffer(req.body) ? req.body.toString('utf-8') : JSON.stringify(req.body);
+    const payload =
+      typeof req.body === "string"
+        ? req.body
+        : Buffer.isBuffer(req.body)
+        ? req.body.toString("utf-8")
+        : JSON.stringify(req.body);
     const headers = req.headers;
 
     console.log(`📨 Webhook request received`);
@@ -53,18 +58,24 @@ export const handleClerkWebhook = async (req, res) => {
     const eventData = evt.data;
 
     console.log(`🔔 Webhook received: ${eventType}`);
+    console.log(`   User ID: ${eventData.id}`);
+    console.log(`   Username: ${eventData.username}`);
+    console.log(`   Email: ${eventData.email_addresses?.[0]?.email_address}`);
 
     // Handle different event types
     switch (eventType) {
       case "user.created":
+        console.log(`📝 Processing user.created event...`);
         await handleUserCreated(eventData);
         break;
 
       case "user.updated":
+        console.log(`✏️ Processing user.updated event...`);
         await handleUserUpdated(eventData);
         break;
 
       case "user.deleted":
+        console.log(`🗑️ Processing user.deleted event...`);
         await handleUserDeleted(eventData);
         break;
 
@@ -86,6 +97,8 @@ export const handleClerkWebhook = async (req, res) => {
  */
 async function handleUserCreated(userData) {
   try {
+    console.log(`   📥 User data received:`, userData);
+
     const { id, username, email_addresses, first_name, last_name, image_url } =
       userData;
 
@@ -95,12 +108,22 @@ async function handleUserCreated(userData) {
       email_addresses?.[0]?.email_address ||
       "unknown";
 
+    console.log(`   🔍 Looking for existing user with clerkId: ${id}`);
+
     // Check if user already exists
     const existingUser = await User.findOne({ clerkId: id });
     if (existingUser) {
-      console.log(`✅ User already exists: ${existingUser.username}`);
+      console.log(`   ✅ User already exists: ${existingUser.username}`);
       return;
     }
+
+    console.log(`   📝 Creating new user with data:`, {
+      clerkId: id,
+      username: username || primaryEmail.split("@")[0],
+      email: primaryEmail,
+      firstName: first_name,
+      lastName: last_name,
+    });
 
     // Create new user in MongoDB
     const newUser = await User.create({
@@ -114,9 +137,14 @@ async function handleUserCreated(userData) {
       lastSeen: new Date(),
     });
 
-    console.log(`✅ User created in MongoDB: ${newUser.username}`);
+    console.log(
+      `   ✅ User created successfully in MongoDB: ${newUser.username}`
+    );
+    console.log(`      ID: ${newUser._id}`);
+    console.log(`      Email: ${newUser.email}`);
   } catch (error) {
-    console.error("❌ Error handling user.created:", error);
+    console.error("   ❌ Error handling user.created:", error.message);
+    console.error("      Stack:", error.stack);
     throw error;
   }
 }
