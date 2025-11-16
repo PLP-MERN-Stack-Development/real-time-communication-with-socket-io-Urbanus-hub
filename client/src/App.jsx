@@ -1,5 +1,6 @@
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
-import ChatApp from './components/ChatApp';
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import ChatApp from "./components/ChatApp";
+import AuthPage from "./pages/AuthPage";
 
 export default function App() {
   return (
@@ -8,7 +9,7 @@ export default function App() {
         <ChatApp />
       </SignedIn>
       <SignedOut>
-        <RedirectToSignIn />
+        <AuthPage />
       </SignedOut>
     </>
   );
